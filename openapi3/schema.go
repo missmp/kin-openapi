@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"unicode/utf16"
 
-	"github.com/getkin/kin-openapi/jsoninfo"
+	"github.com/missmp/kin-openapi/jsoninfo"
 )
 
 var (
@@ -55,6 +55,8 @@ type Schema struct {
 	Not          *SchemaRef    `json:"not,omitempty"`
 	Type         string        `json:"type,omitempty"`
 	Format       string        `json:"format,omitempty"`
+	Field        string        `json:"field,omitempty"`
+	Value        interface{}   `json:"value,omitempty"`
 	Description  string        `json:"description,omitempty"`
 	Enum         []interface{} `json:"enum,omitempty"`
 	Default      interface{}   `json:"default,omitempty"`
@@ -625,10 +627,12 @@ func (schema *Schema) visitJSON(value interface{}, fast bool) (err error) {
 		return schema.visitJSONObject(value, fast)
 	default:
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "type",
-			Reason:      fmt.Sprintf("Not a JSON value: %T", value),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "type",
+			Reason:        fmt.Sprintf("Not a JSON value: %T", value),
 		}
 	}
 }
@@ -644,10 +648,12 @@ func (schema *Schema) visitSetOperations(value interface{}, fast bool) (err erro
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "enum",
-			Reason:      "JSON value is not one of the allowed values",
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "enum",
+			Reason:        "JSON value is not one of the allowed values",
 		}
 	}
 
@@ -661,9 +667,11 @@ func (schema *Schema) visitSetOperations(value interface{}, fast bool) (err erro
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "not",
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "not",
 			}
 		}
 	}
@@ -684,9 +692,11 @@ func (schema *Schema) visitSetOperations(value interface{}, fast bool) (err erro
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "oneOf",
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "oneOf",
 			}
 		}
 	}
@@ -708,9 +718,11 @@ func (schema *Schema) visitSetOperations(value interface{}, fast bool) (err erro
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "anyOf",
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "anyOf",
 			}
 		}
 	}
@@ -725,10 +737,12 @@ func (schema *Schema) visitSetOperations(value interface{}, fast bool) (err erro
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "allOf",
-				Origin:      err,
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "allOf",
+				Origin:        err,
 			}
 		}
 	}
@@ -743,10 +757,12 @@ func (schema *Schema) visitJSONNull(fast bool) (err error) {
 		return errSchema
 	}
 	return &SchemaError{
-		Value:       nil,
-		Schema:      schema,
-		SchemaField: "nullable",
-		Reason:      "Value is not nullable",
+		Field:         schema.Field,
+		OriginalValue: schema.Value,
+		Value:         nil,
+		Schema:        schema,
+		SchemaField:   "nullable",
+		Reason:        "Value is not nullable",
 	}
 }
 
@@ -773,10 +789,12 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "type",
-				Reason:      "Value must be an integer",
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "type",
+				Reason:        "Value must be an integer",
 			}
 		}
 	} else if schemaType != "" && schemaType != "number" {
@@ -789,10 +807,12 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "exclusiveMinimum",
-			Reason:      fmt.Sprintf("Number must be more than %g", *schema.Min),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "exclusiveMinimum",
+			Reason:        fmt.Sprintf("Number must be more than %g", *schema.Min),
 		}
 	}
 
@@ -802,10 +822,12 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "exclusiveMaximum",
-			Reason:      fmt.Sprintf("Number must be less than %g", *schema.Max),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "exclusiveMaximum",
+			Reason:        fmt.Sprintf("Number must be less than %g", *schema.Max),
 		}
 	}
 
@@ -815,10 +837,12 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "minimum",
-			Reason:      fmt.Sprintf("Number must be at least %g", *v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "minimum",
+			Reason:        fmt.Sprintf("Number must be at least %g", *v),
 		}
 	}
 
@@ -828,10 +852,12 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "maximum",
-			Reason:      fmt.Sprintf("Number must be most %g", *v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "maximum",
+			Reason:        fmt.Sprintf("Number must be most %g", *v),
 		}
 	}
 
@@ -844,9 +870,11 @@ func (schema *Schema) visitJSONNumber(value float64, fast bool) (err error) {
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "multipleOf",
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "multipleOf",
 			}
 		}
 	}
@@ -880,10 +908,12 @@ func (schema *Schema) visitJSONString(value string, fast bool) (err error) {
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "minLength",
-				Reason:      fmt.Sprintf("Minimum string length is %d", minLength),
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "minLength",
+				Reason:        fmt.Sprintf("Minimum string length is %d", minLength),
 			}
 		}
 		if maxLength != nil && length > int64(*maxLength) {
@@ -891,10 +921,12 @@ func (schema *Schema) visitJSONString(value string, fast bool) (err error) {
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "maxLength",
-				Reason:      fmt.Sprintf("Maximum string length is %d", *maxLength),
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "maxLength",
+				Reason:        fmt.Sprintf("Maximum string length is %d", *maxLength),
 			}
 		}
 	}
@@ -933,10 +965,12 @@ func (schema *Schema) visitJSONString(value string, fast bool) (err error) {
 				field = "pattern"
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: field,
-				Reason:      cp.ErrReason,
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   field,
+				Reason:        cp.ErrReason,
 			}
 		}
 	}
@@ -960,10 +994,12 @@ func (schema *Schema) visitJSONArray(value []interface{}, fast bool) (err error)
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "minItems",
-			Reason:      fmt.Sprintf("Minimum number of items is %d", v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "minItems",
+			Reason:        fmt.Sprintf("Minimum number of items is %d", v),
 		}
 	}
 
@@ -973,10 +1009,12 @@ func (schema *Schema) visitJSONArray(value []interface{}, fast bool) (err error)
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "maxItems",
-			Reason:      fmt.Sprintf("Maximum number of items is %d", *v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "maxItems",
+			Reason:        fmt.Sprintf("Maximum number of items is %d", *v),
 		}
 	}
 
@@ -986,10 +1024,12 @@ func (schema *Schema) visitJSONArray(value []interface{}, fast bool) (err error)
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "uniqueItems",
-			Reason:      fmt.Sprintf("Duplicate items found"),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "uniqueItems",
+			Reason:        fmt.Sprintf("Duplicate items found"),
 		}
 	}
 
@@ -1027,10 +1067,12 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "minProperties",
-			Reason:      fmt.Sprintf("There must be at least %d properties", v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "minProperties",
+			Reason:        fmt.Sprintf("There must be at least %d properties", v),
 		}
 	}
 
@@ -1040,10 +1082,12 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "maxProperties",
-			Reason:      fmt.Sprintf("There must be at most %d properties", *v),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "maxProperties",
+			Reason:        fmt.Sprintf("There must be at most %d properties", *v),
 		}
 	}
 
@@ -1075,6 +1119,8 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			propertyRef := properties[k]
 			if propertyRef != nil {
 				p := propertyRef.Value
+				p.Field = k
+				p.Value = v
 				if p == nil {
 					return foundUnresolvedRef(propertyRef.Ref)
 				}
@@ -1092,9 +1138,11 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			if cp != nil {
 				if !cp.Regexp.MatchString(k) {
 					return &SchemaError{
-						Schema:      schema,
-						SchemaField: "patternProperties",
-						Reason:      cp.ErrReason,
+						Field:         schema.Field,
+						OriginalValue: schema.Value,
+						Schema:        schema,
+						SchemaField:   "patternProperties",
+						Reason:        cp.ErrReason,
 					}
 				}
 			}
@@ -1112,10 +1160,12 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 			return errSchema
 		}
 		return &SchemaError{
-			Value:       value,
-			Schema:      schema,
-			SchemaField: "properties",
-			Reason:      fmt.Sprintf("Property '%s' is unsupported", k),
+			Field:         schema.Field,
+			OriginalValue: schema.Value,
+			Value:         value,
+			Schema:        schema,
+			SchemaField:   "properties",
+			Reason:        fmt.Sprintf("Property '%s' is unsupported", k),
 		}
 	}
 	for _, k := range schema.Required {
@@ -1124,10 +1174,12 @@ func (schema *Schema) visitJSONObject(value map[string]interface{}, fast bool) (
 				return errSchema
 			}
 			return &SchemaError{
-				Value:       value,
-				Schema:      schema,
-				SchemaField: "required",
-				Reason:      fmt.Sprintf("Property '%s' is missing", k),
+				Field:         schema.Field,
+				OriginalValue: schema.Value,
+				Value:         value,
+				Schema:        schema,
+				SchemaField:   "required",
+				Reason:        fmt.Sprintf("Property '%s' is missing", k),
 			}
 		}
 	}
@@ -1139,20 +1191,24 @@ func (schema *Schema) expectedType(typ string, fast bool) error {
 		return errSchema
 	}
 	return &SchemaError{
-		Value:       schema.Type,
-		Schema:      schema,
-		SchemaField: "type",
-		Reason:      "Field must be set to " + typ + " or not be present",
+		Field:         schema.Field,
+		OriginalValue: schema.Value,
+		Value:         schema.Type,
+		Schema:        schema,
+		SchemaField:   "type",
+		Reason:        "Field must be set to " + typ + " or not be present",
 	}
 }
 
 type SchemaError struct {
-	Value       interface{}
-	reversePath []string
-	Schema      *Schema
-	SchemaField string
-	Reason      string
-	Origin      error
+	Field         string
+	OriginalValue interface{}
+	Value         interface{}
+	reversePath   []string
+	Schema        *Schema
+	SchemaField   string
+	Reason        string
+	Origin        error
 }
 
 func markSchemaErrorKey(err error, key string) error {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/missmp/kin-openapi/openapi3"
 )
 
 // This function takes a parameter definition from the swagger spec, and
